@@ -30,6 +30,6 @@ pub fn run(input: []const i32, task: hlp.Task) i32 {
 
 test "test day1" {
     const input = [_]i32{ 199, 200, 208, 210, 200, 207, 240, 269, 260, 263 };
-    const res = run(input);
+    const res = run(input[0..], hlp.Task.first);
     try std.testing.expectEqual(res, 7);
 }
