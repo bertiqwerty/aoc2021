@@ -4,8 +4,7 @@ const day1 = @import("day1.zig");
 const day2 = @import("day2.zig");
 
 fn to_ints(input: hlp.ArrayListOfStr) !std.ArrayList(i32) {
-    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    var res = std.ArrayList(i32).init(std.testing.allocator);
+    var res = std.ArrayList(i32).init(std.heap.page_allocator);
     for (input.items) |s| {
         const parsed = try std.fmt.parseInt(i32, s.items, 10);
         try res.append(parsed);
