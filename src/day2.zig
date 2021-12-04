@@ -66,7 +66,4 @@ test "test day2" {
     try test_assert("down -25"[0..], -25, Dir.down);
     try test_assert("down 0"[0..], 0, Dir.down);
     try test_assert("down 1"[0..], 1, Dir.down);
-
-    // const input = [_][_]u8{ "forward 5", "down 5", "forward 8", "up 3", "down 8", "forward 2" };
-
 }
