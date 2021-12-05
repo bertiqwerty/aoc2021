@@ -10,7 +10,7 @@ pub fn run(input: std.ArrayList(u64), task: hlp.Task) !u64 {
             for (input.items) |a| {
                 for (sumlist) |_, idx| {
                     const reverse_idx = sumlist.len - 1 - idx;
-                    sumlist[idx] += hlp.get_bit(u64, a, @intCast(i16, reverse_idx));
+                    sumlist[idx] += hlp.get_bit(u64, a, @intCast(u8, reverse_idx));
                 }
             }
             var gamma: u64 = 0;
@@ -19,9 +19,9 @@ pub fn run(input: std.ArrayList(u64), task: hlp.Task) !u64 {
                 const reverse_idx = sumlist.len - 1 - idx;
                 if (s > 0) {
                     if (s > @intCast(i64, input.items.len) - @intCast(i64, s)) {
-                        gamma = hlp.set_bit(u64, gamma, @intCast(i16, reverse_idx));
+                        gamma = hlp.set_bit(u64, gamma, @intCast(u8, reverse_idx));
                     } else {
-                        epsilon = hlp.set_bit(u64, epsilon, @intCast(i16, reverse_idx));
+                        epsilon = hlp.set_bit(u64, epsilon, @intCast(u8, reverse_idx));
                     }
                 }
             }
