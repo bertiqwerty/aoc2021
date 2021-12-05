@@ -6,6 +6,7 @@ const day2 = @import("day2.zig");
 pub fn main() anyerror!void {
     std.log.info("AOC 2021.", .{});
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
     var allocator = &arena.allocator;
 
     {
@@ -30,3 +31,6 @@ pub fn main() anyerror!void {
     }
 }
 
+test "test main" {
+    try main();
+}
