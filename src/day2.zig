@@ -1,7 +1,7 @@
 const std = @import("std");
 const hlp = @import("helpers.zig");
 
-pub const ArrayListOfStr = hlp.ArrayListOfStr;
+pub const StringList = hlp.StringList;
 
 const Dir = enum { forward, down };
 
@@ -21,7 +21,7 @@ fn parse(s: []const u8) !?Cmd {
     }
 }
 
-pub fn run(input: ArrayListOfStr, task: hlp.Task) !i32 {
+pub fn run(input: StringList, task: hlp.Task) !i32 {
     switch (task) {
         hlp.Task.first => {
             var h_pos: i32 = 0;
