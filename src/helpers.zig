@@ -10,16 +10,15 @@ pub fn deinit_sl(sl: StringList) void {
     sl.deinit();
 }
 
-
 pub fn read_file_to_string_array(fname: []const u8, allocator: *std.mem.Allocator) !StringList {
     var file = try std.fs.cwd().openFile(fname, .{});
     defer file.close();
-    
+
     var sl = StringList.init(allocator);
     var buf_reader = std.io.bufferedReader(file.reader());
     var in_stream = buf_reader.reader();
     var buf: [max_str_len]u8 = undefined;
-    
+
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         var s = std.ArrayList(u8).init(allocator);
         try s.appendSlice(line);
@@ -37,7 +36,6 @@ pub fn to_ints(input: StringList) !std.ArrayList(i32) {
     return res;
 }
 
-
 test "test read" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
@@ -46,7 +44,6 @@ test "test read" {
     const parsed = try std.fmt.parseInt(i32, res.items[0].items, 10);
     try std.testing.expectEqual(parsed, 170);
 }
-
 
 test "to ints" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
