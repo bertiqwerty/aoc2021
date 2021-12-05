@@ -76,25 +76,26 @@ test "bit stuff" {
     try test_set_bit(0, 0, 1);
     try test_set_bit(0, 1, 2);
     try test_set_bit(0, 2, 4);
+    try test_set_bit(1, 0, 1);
+    try test_set_bit(7, 1, 7);
     try test_unset_bit(4, 2, 0);
     try test_unset_bit(2, 1, 0);
     try test_unset_bit(7, 1, 5);
+    try test_unset_bit(0, 0, 0);
 }
 
 test "test read" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const res = try read_file_to_string_array("input_data/day1.txt", &arena.allocator);
+    const res = try read_file_to_string_array("input_data/day1.txt", std.testing.allocator);
     defer deinit_sl(res);
     const parsed = try std.fmt.parseInt(i32, res.items[0].items, 10);
     try std.testing.expectEqual(parsed, 170);
 }
 
 test "to ints" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    var allocator = &arena.allocator;
-    const x = try to_ints(i32, try read_file_to_string_array("input_data/day1.txt", allocator), 10, allocator);
+    var allocator = std.testing.allocator;
+    const strings = try read_file_to_string_array("input_data/day1.txt", allocator);
+    defer deinit_sl(strings);
+    const x = try to_ints(i32, strings, 10, allocator);
     defer x.deinit();
     try std.testing.expectEqual(x.items[0], 170);
     try std.testing.expectEqual(x.items[x.items.len - 1], 7181);
