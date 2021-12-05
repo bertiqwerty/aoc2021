@@ -1,7 +1,8 @@
 const std = @import("std");
 pub const Task = enum { first, second };
 pub const max_str_len = 1000;
-pub const StringList = std.ArrayList(std.ArrayList(u8));
+const ArrayList = std.ArrayList;
+pub const StringList = ArrayList(ArrayList(u8));
 
 pub fn deinit_sl(sl: StringList) void {
     for (sl.items) |elt| {
@@ -20,15 +21,15 @@ pub fn read_file_to_string_array(fname: []const u8, allocator: *std.mem.Allocato
     var buf: [max_str_len]u8 = undefined;
 
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        var s = std.ArrayList(u8).init(allocator);
+        var s = ArrayList(u8).init(allocator);
         try s.appendSlice(line);
         try sl.append(s);
     }
     return sl;
 }
 
-pub fn to_ints(comptime T: type, input: StringList, radix: u8, allocator: *std.mem.Allocator) !std.ArrayList(T) {
-    var res = std.ArrayList(T).init(allocator);
+pub fn to_ints(comptime T: type, input: StringList, radix: u8, allocator: *std.mem.Allocator) !ArrayList(T) {
+    var res = ArrayList(T).init(allocator);
     for (input.items) |s| {
         const parsed = try std.fmt.parseInt(T, s.items, radix);
         try res.append(parsed);
@@ -59,15 +60,15 @@ pub fn unset_bit(comptime T: type, a: T, bit_pos: u8) T {
 pub const Range = struct {
     len: usize,
     idx: usize = 0,
-    fn next(self: *Range) ?usize {
+    pub fn next(self: *Range) ?usize {
         if (self.idx < self.len) {
             self.idx += 1;
             return self.idx - 1;
         }
         return null;
     }
-    fn make(len: usize) Range {
-        return Range{.len=len};
+    pub fn make(len: usize) Range {
+        return Range{ .len = len };
     }
 };
 
