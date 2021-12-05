@@ -3,36 +3,42 @@ const hlp = @import("helpers.zig");
 
 pub const StringList = hlp.StringList;
 
+const GammaEps = struct { gamma: u64, eps: u64 };
+
+fn compute_gamma_eps(input: std.ArrayList(u64)) GammaEps {
+    var sumlist = [_]u64{0} ** 64;
+    for (input.items) |a| {
+        for (sumlist) |_, idx| {
+            const reverse_idx = sumlist.len - 1 - idx;
+            sumlist[idx] += hlp.get_bit(u64, a, @intCast(u8, reverse_idx));
+        }
+    }
+    var gamma: u64 = 0;
+    var epsilon: u64 = 0;
+    for (sumlist) |s, idx| {
+        const reverse_idx = sumlist.len - 1 - idx;
+        if (s > 0) {
+            if (s > @intCast(i64, input.items.len) - @intCast(i64, s)) {
+                gamma = hlp.set_bit(u64, gamma, @intCast(u8, reverse_idx));
+            } else {
+                epsilon = hlp.set_bit(u64, epsilon, @intCast(u8, reverse_idx));
+            }
+        }
+    }
+    return GammaEps{ .gamma = gamma, .eps = epsilon };
+}
+
 pub fn run(input: std.ArrayList(u64), task: hlp.Task) !u64 {
     switch (task) {
         hlp.Task.first => {
-            var sumlist = [_]u64{0} ** 64;
-            for (input.items) |a| {
-                for (sumlist) |_, idx| {
-                    const reverse_idx = sumlist.len - 1 - idx;
-                    sumlist[idx] += hlp.get_bit(u64, a, @intCast(u8, reverse_idx));
-                }
-            }
-            var gamma: u64 = 0;
-            var epsilon: u64 = 0;
-            for (sumlist) |s, idx| {
-                const reverse_idx = sumlist.len - 1 - idx;
-                if (s > 0) {
-                    if (s > @intCast(i64, input.items.len) - @intCast(i64, s)) {
-                        gamma = hlp.set_bit(u64, gamma, @intCast(u8, reverse_idx));
-                    } else {
-                        epsilon = hlp.set_bit(u64, epsilon, @intCast(u8, reverse_idx));
-                    }
-                }
-            }
-            return  gamma * epsilon;
+            var gamma_eps = compute_gamma_eps(input);
+            return gamma_eps.gamma * gamma_eps.eps;
         },
         hlp.Task.second => {
             return 0;
         },
     }
 }
-
 
 test "test day3" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
