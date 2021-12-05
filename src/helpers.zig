@@ -55,6 +55,31 @@ pub fn unset_bit(comptime T: type, a: T, bit_pos: u8) T {
     const filter: T = mx ^ shifted;
     return a & filter;
 }
+
+pub const Range = struct {
+    len: usize,
+    idx: usize = 0,
+    fn next(self: *Range) ?usize {
+        if (self.idx < self.len) {
+            self.idx += 1;
+            return self.idx - 1;
+        }
+        return null;
+    }
+    fn make(len: usize) Range {
+        return Range{.len=len};
+    }
+};
+
+test "range" {
+    var counter: usize = 0;
+    var range = Range.make(50);
+    while (range.next()) |idx| {
+        try std.testing.expectEqual(counter, idx);
+        counter += 1;
+    }
+}
+
 fn test_get_bit(a: u8, pos: u8, ref: u8) !void {
     try std.testing.expectEqual(get_bit(u8, a, pos), ref);
 }
