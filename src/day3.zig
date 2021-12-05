@@ -3,24 +3,6 @@ const hlp = @import("helpers.zig");
 
 pub const StringList = hlp.StringList;
 
-const Dir = enum { forward, down };
-
-const Cmd = struct { dir: Dir, amount: i32 };
-
-const ParseError = error{UnknownLetter};
-
-fn parse(s: []const u8) !?Cmd {
-    var splitted = std.mem.split(s, " ");
-    const dir_char = splitted.next().?[0];
-    const amount = try std.fmt.parseInt(i32, splitted.next().?, 10);
-    switch (dir_char) {
-        'f' => return Cmd{ .dir = Dir.forward, .amount = amount },
-        'd' => return Cmd{ .dir = Dir.down, .amount = amount },
-        'u' => return Cmd{ .dir = Dir.down, .amount = -amount },
-        else => return ParseError.UnknownLetter,
-    }
-}
-
 pub fn run(input: std.ArrayList(u64), task: hlp.Task) !u64 {
     switch (task) {
         hlp.Task.first => {
