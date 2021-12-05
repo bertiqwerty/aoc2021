@@ -27,13 +27,58 @@ pub fn read_file_to_string_array(fname: []const u8, allocator: *std.mem.Allocato
     return sl;
 }
 
-pub fn to_ints(input: StringList) !std.ArrayList(i32) {
-    var res = std.ArrayList(i32).init(std.heap.page_allocator);
+pub fn to_ints(comptime T: type, input: StringList, radix: u8, allocator: *std.mem.Allocator) !std.ArrayList(T) {
+    var res = std.ArrayList(T).init(allocator);
     for (input.items) |s| {
-        const parsed = try std.fmt.parseInt(i32, s.items, 10);
+        const parsed = try std.fmt.parseInt(T, s.items, radix);
         try res.append(parsed);
     }
     return res;
+}
+
+pub fn get_bit(comptime T: type, a: T, bit_pos: i16) T {
+    const one: T = 1;
+    const shifted: T = std.math.shl(T, one, bit_pos);
+    return std.math.shl(T, a & shifted, -bit_pos);
+}
+
+pub fn set_bit(comptime T: type, a: T, bit_pos: i16) T {
+    const one: T = 1;
+    const shifted: T = std.math.shl(T, one, bit_pos);
+    return a | shifted;
+}
+
+pub fn unset_bit(comptime T: type, a: T, bit_pos: i16) T {
+    const one: T = 1;
+    const mx: T = std.math.maxInt(T);
+    const shifted: T = std.math.shl(T, one, bit_pos);
+    const filter: T = mx ^ shifted;
+    return a & filter;
+}
+fn test_get_bit(a: u8, pos: u8, ref: u8) !void {
+    try std.testing.expectEqual(get_bit(u8, a, pos), ref);
+}
+
+fn test_set_bit(a: u8, pos: u8, ref: u8) !void {
+    try std.testing.expectEqual(set_bit(u8, a, pos), ref);
+}
+fn test_unset_bit(a: u8, pos: u8, ref: u8) !void {
+    try std.testing.expectEqual(unset_bit(u8, a, pos), ref);
+}
+
+test "bit stuff" {
+    try test_get_bit(0, 0, 0);
+    try test_get_bit(1, 0, 1);
+    try test_get_bit(2, 0, 0);
+    try test_get_bit(2, 1, 1);
+    try test_get_bit(4, 1, 0);
+    try test_get_bit(4, 2, 1);
+    try test_set_bit(0, 0, 1);
+    try test_set_bit(0, 1, 2);
+    try test_set_bit(0, 2, 4);
+    try test_unset_bit(4, 2, 0);
+    try test_unset_bit(2, 1, 0);
+    try test_unset_bit(7, 1, 5);
 }
 
 test "test read" {
@@ -49,7 +94,7 @@ test "to ints" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
     var allocator = &arena.allocator;
-    const x = try to_ints(try read_file_to_string_array("input_data/day1.txt", allocator));
+    const x = try to_ints(i32, try read_file_to_string_array("input_data/day1.txt", allocator), 10, allocator);
     defer x.deinit();
     try std.testing.expectEqual(x.items[0], 170);
     try std.testing.expectEqual(x.items[x.items.len - 1], 7181);
