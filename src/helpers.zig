@@ -51,10 +51,8 @@ pub fn set_bit(comptime T: type, a: T, bit_pos: u8) T {
 
 pub fn unset_bit(comptime T: type, a: T, bit_pos: u8) T {
     const one: T = 1;
-    const mx: T = std.math.maxInt(T);
     const shifted: T = std.math.shl(T, one, bit_pos);
-    const filter: T = mx ^ shifted;
-    return a & filter;
+    return a & ~shifted;
 }
 
 pub const Range = struct {
