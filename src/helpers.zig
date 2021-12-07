@@ -2,20 +2,20 @@ const std = @import("std");
 pub const Task = enum { first, second };
 pub const max_str_len = 1000;
 const ArrayList = std.ArrayList;
-pub const StringList = ArrayList(ArrayList(u8));
+pub const StrList = ArrayList(ArrayList(u8));
 
-pub fn deinit_sl(sl: StringList) void {
+pub fn deinit_sl(sl: StrList) void {
     for (sl.items) |elt| {
         elt.deinit();
     }
     sl.deinit();
 }
 
-pub fn read_file_to_string_array(fname: []const u8, allocator: *std.mem.Allocator) !StringList {
+pub fn read_file_to_string_array(fname: []const u8, allocator: *std.mem.Allocator) !StrList {
     var file = try std.fs.cwd().openFile(fname, .{});
     defer file.close();
 
-    var sl = StringList.init(allocator);
+    var sl = StrList.init(allocator);
     var buf_reader = std.io.bufferedReader(file.reader());
     var in_stream = buf_reader.reader();
     var buf: [max_str_len]u8 = undefined;
@@ -28,7 +28,7 @@ pub fn read_file_to_string_array(fname: []const u8, allocator: *std.mem.Allocato
     return sl;
 }
 
-pub fn to_ints(comptime T: type, input: StringList, radix: u8, allocator: *std.mem.Allocator) !ArrayList(T) {
+pub fn to_ints(comptime T: type, input: StrList, radix: u8, allocator: *std.mem.Allocator) !ArrayList(T) {
     var res = ArrayList(T).init(allocator);
     for (input.items) |s| {
         const parsed = try std.fmt.parseInt(T, s.items, radix);

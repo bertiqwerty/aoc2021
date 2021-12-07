@@ -1,11 +1,13 @@
 const std = @import("std");
 const hlp = @import("helpers.zig");
 
-pub const StringList = hlp.StringList;
+pub const StrList = hlp.StrList;
 const ArrayList = std.ArrayList;
+const Allocator = std.mem.Allocator;
+
 const GammaEpsPair = struct { gamma: LrBits(u64), eps: LrBits(u64) };
 
-pub fn to_bits(comptime T: type, input: StringList, radix: u8, allocator: *std.mem.Allocator) !ArrayList(LrBits(T)) {
+pub fn to_bits(comptime T: type, input: StrList, radix: u8, allocator: *Allocator) !ArrayList(LrBits(T)) {
     var res = ArrayList(LrBits(T)).init(allocator);
     for (input.items) |s| {
         const parsed = try std.fmt.parseInt(T, s.items, radix);
@@ -63,7 +65,7 @@ pub fn LrBits(comptime T: type) type {
 
 const NActivesIdxPair = struct { n_actives: usize, last_idx: usize };
 
-fn sum(are_items_active: ArrayList(bool)) NActivesIdxPair {
+fn count_actives(are_items_active: ArrayList(bool)) NActivesIdxPair {
     var n_actives: u64 = 0;
     var last_idx: u64 = 0;
     for (are_items_active.items) |is_active, idx| {
@@ -75,7 +77,7 @@ fn sum(are_items_active: ArrayList(bool)) NActivesIdxPair {
     return NActivesIdxPair{ .n_actives = n_actives, .last_idx = last_idx };
 }
 
-fn compute_gamma_eps(input: std.ArrayList(LrBits(u64)), are_items_active: ?ArrayList(bool), allocator: *std.mem.Allocator) !GammaEpsPair {
+fn compute_gamma_eps(input: ArrayList(LrBits(u64)), are_items_active: ?ArrayList(bool), allocator: *Allocator) !GammaEpsPair {
     const bit_len = input.items[0].len;
     var sumlist = try ArrayList(u64).initCapacity(allocator, bit_len);
     defer sumlist.deinit();
@@ -83,8 +85,8 @@ fn compute_gamma_eps(input: std.ArrayList(LrBits(u64)), are_items_active: ?Array
 
     for (input.items) |a, input_idx| {
         for (sumlist.items) |_, bit_pos| {
-            if (are_items_active) |are_items_active_unwrapped| {
-                if (are_items_active_unwrapped.items[input_idx]) {
+            if (are_items_active) |aia| {
+                if (aia.items[input_idx]) {
                     sumlist.items[bit_pos] += a.at(bit_pos);
                 }
             } else {
@@ -92,12 +94,11 @@ fn compute_gamma_eps(input: std.ArrayList(LrBits(u64)), are_items_active: ?Array
             }
         }
     }
-    const relevant_input_len = if (are_items_active) |active_unwrapped| sum(active_unwrapped).n_actives else input.items.len;
-
+    const relevant_len = if (are_items_active) |aia| count_actives(aia).n_actives else input.items.len;
     var gamma = LrBits(u64).make(0, bit_len);
     var epsilon = LrBits(u64).make(0, bit_len);
     for (sumlist.items) |s, idx| {
-        if (s >= @intCast(i64, relevant_input_len) - @intCast(i64, s)) {
+        if (s >= @intCast(i64, relevant_len) - @intCast(i64, s)) {
             gamma = gamma.set(idx);
         } else {
             epsilon = epsilon.set(idx);
@@ -134,7 +135,7 @@ fn filter(common_bit: CommonBit, input: ArrayList(LrBits(u64))) !u64 {
                 }
             }
         }
-        const nactives_idx_pair = sum(are_items_still_active);
+        const nactives_idx_pair = count_actives(are_items_still_active);
         if (nactives_idx_pair.n_actives == 1) {
             return input.items[nactives_idx_pair.last_idx].a;
         }
@@ -164,7 +165,7 @@ test "test day3" {
 
     const s = "00100,11110,10110,10111,10101,01111,00111,11100,10000,11001,00010,01010";
     var splitted = std.mem.split(s, ",");
-    var y = StringList.init(allocator);
+    var y = StrList.init(allocator);
     defer hlp.deinit_sl(y);
     while (splitted.next()) |bin_str| {
         var tmp = std.ArrayList(u8).init(allocator);

@@ -1,7 +1,7 @@
 const std = @import("std");
 const hlp = @import("helpers.zig");
 
-pub const StringList = hlp.StringList;
+pub const StringList = hlp.StrList;
 
 const Dir = enum { forward, down };
 
