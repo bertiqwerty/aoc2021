@@ -3,7 +3,7 @@ const hlp = @import("helpers.zig");
 
 pub const StringList = hlp.StringList;
 const ArrayList = std.ArrayList;
-const GammaEps = struct { gamma: LrBits(u64), eps: LrBits(u64) };
+const GammaEpsPair = struct { gamma: LrBits(u64), eps: LrBits(u64) };
 
 pub fn to_bits(comptime T: type, input: StringList, radix: u8, allocator: *std.mem.Allocator) !ArrayList(LrBits(T)) {
     var res = ArrayList(LrBits(T)).init(allocator);
@@ -61,64 +61,97 @@ pub fn LrBits(comptime T: type) type {
     };
 }
 
-fn compute_gamma_eps(input: std.ArrayList(LrBits(u64)), allocator: *std.mem.Allocator) !GammaEps {
+const NActivesIdxPair = struct { n_actives: usize, last_idx: usize };
+
+fn sum(are_items_active: ArrayList(bool)) NActivesIdxPair {
+    var n_actives: u64 = 0;
+    var last_idx: u64 = 0;
+    for (are_items_active.items) |is_active, idx| {
+        if (is_active) {
+            n_actives += 1;
+            last_idx = idx;
+        }
+    }
+    return NActivesIdxPair{ .n_actives = n_actives, .last_idx = last_idx };
+}
+
+fn compute_gamma_eps(input: std.ArrayList(LrBits(u64)), are_items_active: ?ArrayList(bool), allocator: *std.mem.Allocator) !GammaEpsPair {
     const bit_len = input.items[0].len;
     var sumlist = try ArrayList(u64).initCapacity(allocator, bit_len);
     defer sumlist.deinit();
     sumlist.appendNTimesAssumeCapacity(0, bit_len);
-    for (input.items) |a| {
-        for (sumlist.items) |_, idx| {
-            sumlist.items[idx] += a.at(idx);
+
+    for (input.items) |a, input_idx| {
+        for (sumlist.items) |_, bit_pos| {
+            if (are_items_active) |are_items_active_unwrapped| {
+                if (are_items_active_unwrapped.items[input_idx]) {
+                    sumlist.items[bit_pos] += a.at(bit_pos);
+                }
+            } else {
+                sumlist.items[bit_pos] += a.at(bit_pos);
+            }
         }
     }
+    const relevant_input_len = if (are_items_active) |active_unwrapped| sum(active_unwrapped).n_actives else input.items.len;
+
     var gamma = LrBits(u64).make(0, bit_len);
     var epsilon = LrBits(u64).make(0, bit_len);
     for (sumlist.items) |s, idx| {
-        if (s >= @intCast(i64, input.items.len) - @intCast(i64, s)) {
+        if (s >= @intCast(i64, relevant_input_len) - @intCast(i64, s)) {
             gamma = gamma.set(idx);
         } else {
             epsilon = epsilon.set(idx);
         }
     }
-    return GammaEps{ .gamma = gamma, .eps = epsilon };
+    return GammaEpsPair{ .gamma = gamma, .eps = epsilon };
 }
 
-fn filter(dominant_bit: u8, input: std.ArrayList(LrBits(u64))) !u64 {
+const NoValidFoundError = error{
+    NoValidNoValidFound,
+};
+
+const CommonBit = enum { most, least };
+
+fn filter(common_bit: CommonBit, input: ArrayList(LrBits(u64))) !u64 {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     var allocator = &arena.allocator;
 
-    var range = hlp.Range.make(input.items[0].len);
-    var filtered = input;
-    while (range.next()) |i| {
-        const gamma_eps = try compute_gamma_eps(filtered, allocator);
-        const decisive_bits = if (dominant_bit == 1) gamma_eps.gamma else gamma_eps.eps;
-        var tmp = std.ArrayList(LrBits(u64)).init(allocator);
-        for (filtered.items) |item_bits| {
-            const item_bit = item_bits.at(i);
-            const decisive_bit = decisive_bits.at(i);
-            if (item_bit == decisive_bit) {
-                try tmp.append(item_bits);
+    var are_items_still_active = try ArrayList(bool).initCapacity(allocator, input.items.len);
+    are_items_still_active.appendNTimesAssumeCapacity(true, input.items.len);
+
+    var bit_range = hlp.Range.make(input.items[0].len);
+    while (bit_range.next()) |bit_pos| {
+        const gamma_eps = try compute_gamma_eps(input, are_items_still_active, allocator);
+        const decisive_bits = if (common_bit == CommonBit.most) gamma_eps.gamma else gamma_eps.eps;
+
+        for (input.items) |item_bits, idx| {
+            if (are_items_still_active.items[idx]) {
+                const item_bit = item_bits.at(bit_pos);
+                const decisive_bit = decisive_bits.at(bit_pos);
+                if (item_bit != decisive_bit) {
+                    are_items_still_active.items[idx] = false;
+                }
             }
         }
-        filtered = tmp;
-        if (filtered.items.len == 1) {
-            return filtered.items[0].a;
+        const nactives_idx_pair = sum(are_items_still_active);
+        if (nactives_idx_pair.n_actives == 1) {
+            return input.items[nactives_idx_pair.last_idx].a;
         }
     }
-    return 0;
+    return NoValidFoundError.NoValidNoValidFound;
 }
 
 pub fn run(input: std.ArrayList(LrBits(u64)), task: hlp.Task) !u64 {
     const n_bits = input.items[0].len;
     switch (task) {
         hlp.Task.first => {
-            var gamma_eps = try compute_gamma_eps(input, std.testing.allocator);
+            var gamma_eps = try compute_gamma_eps(input, null, std.testing.allocator);
             return gamma_eps.gamma.a * gamma_eps.eps.a;
         },
         hlp.Task.second => {
-            const oxy = try filter(1, input);
-            const co2 = try filter(0, input);
+            const oxy = try filter(CommonBit.most, input);
+            const co2 = try filter(CommonBit.least, input);
             return oxy * co2;
         },
     }
