@@ -37,19 +37,18 @@ pub fn to_ints(comptime T: type, input: StringList, radix: u8, allocator: *std.m
     return res;
 }
 
-pub fn get_bit(comptime T: type, a: T, bit_pos: u8) T {
+pub fn get_bit(comptime T: type, a: T, bit_pos: usize) T {
     const one: T = 1;
-    const shifted: T = std.math.shl(T, one, bit_pos);
-    return std.math.shl(T, a & shifted, -@intCast(i9, bit_pos));
+    return std.math.shl(T, a, -@intCast(i9, bit_pos)) & 1;
 }
 
-pub fn set_bit(comptime T: type, a: T, bit_pos: u8) T {
+pub fn set_bit(comptime T: type, a: T, bit_pos: usize) T {
     const one: T = 1;
     const shifted: T = std.math.shl(T, one, bit_pos);
     return a | shifted;
 }
 
-pub fn unset_bit(comptime T: type, a: T, bit_pos: u8) T {
+pub fn unset_bit(comptime T: type, a: T, bit_pos: usize) T {
     const one: T = 1;
     const shifted: T = std.math.shl(T, one, bit_pos);
     return a & ~shifted;
